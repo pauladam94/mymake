@@ -1,14 +1,19 @@
-main : main.c c.o d.o
-	gcc
+CC=gcc
+EXEC=main
+$(EXEC) : main.o c.o d.o
+	$(CC) -c
 
-a.o : a.c
-	gcc 
+a.o : a.c a.h
+	$(CC) -c a.c
 
-b.o : b.c
-	gcc
+b.o : b.c b.h
+	$(CC) -c b.c
 
-c.o : c.c a.h b.h
-	gcc a.o b.o c.c
+c.o : c.c c.h a.h b.h
+	$(CC) -c c.c
 
 d.o : d.c a.h
-	gcc a.o 
+	$(CC) -c d.c 
+
+clean :
+	rm -rf *.o $(EXEC)
