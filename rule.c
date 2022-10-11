@@ -3,7 +3,7 @@
 #include "rule.h"
 #include "debug.h"
 
-
+static int ruleNumber = 0;
 /*
 new_list : allocates a new list_t
 */
@@ -80,6 +80,8 @@ rule_t *new_rule(void) {
         return NULL;
     }
 
+    rule->id = ruleNumber++;
+
     return rule;
 }
 
@@ -89,6 +91,8 @@ void delete_rule(rule_t *rule) {
     delete_list(rule->commands);
 
     free(rule);
+
+    ruleNumber--;
 }
 
 void add_dependencie(rule_t *rule, char *dependencie) {

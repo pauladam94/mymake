@@ -8,6 +8,8 @@ typedef struct list_t {
 } list_t;
 
 typedef struct {
+    int id;
+
     char *target;
     list_t *dependencies;
     list_t *commands;

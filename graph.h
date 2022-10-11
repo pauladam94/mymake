@@ -3,8 +3,14 @@
 
 #include "rule.h"
 
-typedef struct dependencieGraph {
-    rule_t **rules;
-} dependencieGraph;
+typedef struct node_t {
+    rule_t rule;
+    struct node_t **neighbours;
+} node_t;
+
+typedef struct dependencieGraph_t {
+    int numberOfNodes;
+    node_t **nodes;
+} dependencieGraph_t;
 
 #endif
