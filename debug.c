@@ -10,6 +10,7 @@ void debug_error(char *context, char *format, ...) {
 
     va_start(ptr, format);
 
+    fprintf(stderr, "Unexpected error in function '%s' : ", context);
     fprintf(stderr, format, ptr);
 
     va_end(ptr);
