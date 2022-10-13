@@ -1,0 +1,13 @@
+EXE = mymake
+CC = gcc
+CFLAGS = 
+LDFLAGS = 
+
+$(EXE): %.o
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $<
+
+clean:
+	rm -f $(EXE) *.o
