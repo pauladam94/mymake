@@ -1,12 +1,24 @@
 #ifndef __RULE_H__
 #define __RULE_H__
 
+/*
+list_t :
+    - content : the content/description of the current element
+    - next : the address of the next cell in the linked list (NULL if current is last)
+*/
 typedef struct list_t {
     char *content;
 
     struct list_t *next;
 } list_t;
 
+/*
+rule_t :
+    - id : self explanatory
+    - target : self explanatory
+    - dependencies : a linked list of all the dependencies required to make target
+    - commands : a linked list of all the commands to execute to make target
+*/
 typedef struct {
     int id;
 
