@@ -3,22 +3,18 @@
 
 #include "rule.h"
 
-typedef struct node_t {
-    rule_t *rule;
-    struct nl_t {
-        struct node_t *node;
-        struct nl_t *next;
-    } *neighbours;
-} node_t;
-
-typedef struct node_list_t {
-    node_t *current;
-    struct node_list_t *next;
-} node_list_t;
+typedef rule_t node_t;
 
 typedef struct dependencieGraph_t {
     int numberOfNodes;
-    node_list_t *nodes;
+
+    node_t **nodes;
+    int *neighbours;
 } dependencieGraph_t;
+
+dependencieGraph_t *new_dependencie_graph(void);
+void delete_dependencie_graph(dependencieGraph_t *);
+void compute_neighbours(dependencieGraph_t *, rule_t *);
+int add_node(dependencieGraph_t *, rule_t *);
 
 #endif

@@ -13,62 +13,45 @@ dependencieGraph_t *new_dependencie_graph(void) {
         return NULL;
     }
 
+    graph->numberOfNodes = 0;
     graph->nodes = NULL;
+    graph->neighbours = NULL;
 
     return graph;
 }
 
 void delete_dependencie_graph(dependencieGraph_t *graph) {
-    
-}
-
-node_t *new_node(void) {
-    node_t *node;
-    
-    if(!(node = malloc(sizeof(node_t)))) {
-        debug_error("new_node", "Couldn't allocate memory for new node\n");
-        return NULL;
+    for(int i = 0; i < graph->numberOfNodes; i++) {
+        delete_rule(graph->nodes[i]);
     }
 
-    node->rule = NULL;
-    
-    if(!(node->neighbours = malloc(sizeof(nl_t))))
+    free(graph->nodes);
+    free(graph->neighbours);
+    free(graph);
 }
 
-int compute_neighbours(node_t *node, rule_t *rule) {
-    list_t *currentDependencie = rule->dependencies;
-    while(rule->dependencies)
-
-    return EXIT_SUCCESS;
+void compute_neighbours(dependencieGraph_t *graph, rule_t *rule) {
+    for(int i = 0; i < graph->numberOfNodes; i++) {
+        
+    }
 }
 
 /*
-add_rule : adds a new rule into a dependencie graph
+add_node : adds a new rule as a node into a dependencie graph
     - returns -1 if already in the graph
 */
-int add_rule(dependencieGraph_t *graph, rule_t *rule) {
-    node_list_t *currentNodes = graph->nodes;
+int add_node(dependencieGraph_t *graph, rule_t *rule) {
+    graph->nodes = realloc(graph->nodes, (graph->numberOfNodes + 1) * sizeof(node_t *));
 
-    while(currentNodes->next) { // check wheter 'rule' already exists in the dependencie graph
-        if(!strcmp(currentNodes->current->target, rule->target)) {
-            return -1;
-        }
+    if(!graph->nodes) {
+        debug_error("add_node", "Couldn't allocate memory for new node\n");
 
-        currentNodes = currentNodes->next;
-    }
+        delete_dependencie_graph(graph);
 
-    node_t *newNode = malloc(sizeof(node_t));
-    
-    if(!newNode) {
-        debug_error("add_rule", "Couldn't allocate memory for 'newNode'\n");
         return EXIT_FAILURE;
     }
 
-    newNode->rule = rule;
-    if(compute_neighbours(currentNodes, rule)) {
-        debug_error("add_rule", "Couldn't compute neighbours for rule '%s'\n", rule->target);
-        return EXIT_FAILURE;
-    }
+    graph->nodes[graph->numberOfNodes++] = rule;
 
     return EXIT_SUCCESS;
 }
