@@ -19,7 +19,7 @@ dependencieGraph_t *create_graph() {
 
   FILE *makefile = fopen(file_name, "r");
   if (makefile == NULL) {
-    printf("le fichier %s n'a pas pu s'ouvrir \n", file_name);
+    debug_error("main", "the error occured while trying openign the %s file \n",file_name);
   } else {
 
     // go through the lines of the Makefile
@@ -59,7 +59,6 @@ dependencieGraph_t *create_graph() {
         }
       }
     }
-    printf("\n");
   }
   return g;
 }
