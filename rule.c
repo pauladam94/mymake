@@ -5,7 +5,8 @@
 
 static int ruleNumber = 0;
 /*
-new_list : allocates a new list_t
+new_list :
+    - returns the address of the newly allocated list_t object
 */
 list_t *new_list(void) {
     list_t *list = malloc(sizeof(list_t));
@@ -35,7 +36,9 @@ void delete_list(list_t *list) {
 }
 
 /*
-add_element_in_list : adds a new element at the end of a chained list
+add_element_in_list : adds a new element at the end of a linked list
+    - returns EXIT_FAILURE if anything failed
+    - EXIT_SUCCESS otherwise
 */
 int add_element_in_list(list_t *list, char *content) {
     list_t *elem = new_list();
@@ -57,6 +60,11 @@ int add_element_in_list(list_t *list, char *content) {
     return EXIT_SUCCESS;
 }
 
+/*
+new_rule : 
+    - returns the address of the newly allocated rule
+    - or NULL if anything failed
+*/
 rule_t *new_rule(void) {
     rule_t *rule = malloc(sizeof(rule_t));
 
@@ -85,6 +93,9 @@ rule_t *new_rule(void) {
     return rule;
 }
 
+/*
+delete_rule : deallocate memory for a given rule
+*/
 void delete_rule(rule_t *rule) {
     free(rule->target);
     delete_list(rule->dependencies);
@@ -95,10 +106,16 @@ void delete_rule(rule_t *rule) {
     ruleNumber--;
 }
 
+/*
+add_dependencie : abstraction of adding a dependencie in the linked list of dependencies in a rule
+*/
 void add_dependencie(rule_t *rule, char *dependencie) {
     add_element_in_list(rule->dependencies, dependencie);
 }
 
+/*
+add_command : abstraction of adding a command in the linked list of commands in a rule
+*/
 void add_command(rule_t *rule, char *command) {
     add_element_in_list(rule->commands, command);
 }
