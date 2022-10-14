@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-<<<<<<< HEAD
 #include "debug.h"
 #include "graph.h"
 #include "rule.h"
@@ -30,7 +29,6 @@ make : makes a target depending on the parameter passed into target. If target i
 */
 int make(dependencieGraph_t *graph, char *target, char *checked) {
   int id = 0;
-=======
 #include "graph.h"
 #include "rule.h"
 
@@ -105,7 +103,6 @@ let parcours_profondeur (init:sommet) : bool =
   file vu =[s];
   while (vu != 0){
   }
->>>>>>> 4116890943256601bd7663be26baa4d44a7bc616
 
   if(target) {
     id = contains_rule(graph, target);
@@ -161,7 +158,6 @@ int main(int argc, char *argv[]) {
 
   char *checked;
 
-<<<<<<< HEAD
   if(!(checked = malloc(graph->numberOfNodes * sizeof(char)))) {
     debug_error("main", "Couldn't allocate memory for checked\n");
 
@@ -181,10 +177,6 @@ int main(int argc, char *argv[]) {
   }
 
   return EXIT_SUCCESS;
-=======
-  // 3eme étape exécution des lignes en fonction des dates de sauvegardes
-  // paramétres ou pas à l'éxécution
->>>>>>> 4116890943256601bd7663be26baa4d44a7bc616
 }
 
 
