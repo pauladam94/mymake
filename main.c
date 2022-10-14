@@ -9,96 +9,64 @@ dependencieGraph_t *create_graph() {
   int cpt;
   char file_name[] = "Makefile";
   char *line;
-  char *token1;
-  char *token2;
-  char *target;
 
   rule_t *rule;
-  size_t len = 0;
+  char *token, *target, *dependancie;
   dependencieGraph_t *g = new_dependencie_graph();
+  size_t len = 0;
 
   FILE *makefile = fopen(file_name, "r");
   if (makefile == NULL) {
     printf("le fichier %s n'a pas pu s'ouvrir \n", file_name);
   } else {
 
-    // parcours des lignes
+    // go through the lines of the Makefile
     while (getline(&line, &len, makefile) != EOF) {
 
       if (line[0] == '\t') {
-        // '\t' en début de ligne alors traitement de la commande pour la règle
-        // en cours
+        // '\t' at the beginning of the line the we add a command to the current
+        // rule
         char *command = malloc((strlen(line + 1) + 1) * sizeof(char));
         strcpy(command, line + 1);
         add_command(rule, command);
 
       } else if (line[0] != '\n') {
-        // pas de '\t' en début de ligne
-        // nouvelle règle
+        // not '\t' at the beginning of the line the we add a new rule
         rule = new_rule();
 
-        // stocke dans le graphe la nouvelle règle
+        // store in the graph the new rule
         add_node(g, rule);
 
-        // séparation par ' : ' pour avoir le nom de la règle
+        // split the line to access the target and the dependancies
         cpt = 0;
-        token1 = strtok(line, " ");
-        while (token1 != NULL) {
+        token = strtok(line, " :\t");
+        while (token != NULL) {
           if (cpt == 0) {
-            // alors on définit le nom de la target
-            rule->target = token1;
+            // set the target
+            char *target = malloc((strlen(token) + 1) * sizeof(char));
+            strcpy(target, token);
+            rule->target = token;
           } else {
-
-            // la suite sont les dépendances
-            token2 = strtok(line + 1, " ");
-            while (token2 != NULL) {
-              // ajoute la dépendance à la règle
-              add_dependencie(rule, token2);
-              token2 = strtok(line, " ");
-            }
+            // set the dependencies
+            char *dependancie = malloc((strlen(token) + 1) * sizeof(char));
+            strcpy(dependancie, token);
+            add_dependencie(rule, token);
           }
-          token1 = strtok(NULL, " ");
+          token = strtok(NULL, " :\t");
+          cpt++;
         }
-        // séparation par ' ' pour avoir les dépendances
       }
-
-      // stocke rule
     }
     printf("\n");
   }
   return g;
 }
 
-// Pseudo Code Vérification de cycle naïve
-/*
-// renvoie false si le parcours à partir de init ne repasse pas par init
-let parcours_profondeur (init:sommet) : bool =
-  file vu =[s];
-  while (vu != 0){
-  }
-
-
-let verif_cycle (g : graph) : bool =
-  (g = (S,A))
-  bool TEST;
-  for s dans S
-    bool = bool && parcours_profondeur(s)
-  return bool
-
-graphe définit par liste d'adjacence
-parcours_profondeur est O(|S| + |A|)
-verif_cycle est en O(|S| . (|S| + |A|))
-il existe de meilleur solution mais ici les graphes ne seront jamais très
-grand de facon générale
-*/
-
 int main(int argc, char *argv[]) {
-  // 1er étape création du graphe
+  // 1. étape création du graphe
 
-  // 2eme étape vétification de cycle
+  // 2. étape vétification de cycle
 
-  // 3eme étape exécution des lignes en fonction des dates de sauvegardes
-  // paramétres ou pas à l'éxécution
+  // 3. étape exécution des lignes en fonction des dates de sauvegardes
+
 }
-
-
