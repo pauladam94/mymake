@@ -1,11 +1,10 @@
-main : main.o c.o d.o
-	gcc -c
-
-main.o : main.c 
-	gcc 
+CC=gcc
+EXEC=main
+$(EXEC) : main.o c.o d.o
+	$(CC) -c
 
 a.o : a.c a.h
-	gcc -c a.c
+	$(CC) -c a.c
 
 b.o : b.c b.h
 	$(CC) -c b.c
