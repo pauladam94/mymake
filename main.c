@@ -26,7 +26,8 @@ dependencieGraph_t *create_graph() {
     while (getline(&line, &len, makefile) != EOF) {
 
       if (line[0] == '\t') {
-        // '\t' en début de ligne alors traitement de la commande pour la règle en cours
+        // '\t' en début de ligne alors traitement de la commande pour la règle
+        // en cours
         char *command = malloc((strlen(line + 1) + 1) * sizeof(char));
         strcpy(command, line + 1);
         add_command(rule, command);
@@ -40,15 +41,22 @@ dependencieGraph_t *create_graph() {
         add_node(g, rule);
 
         // séparation par ' : ' pour avoir le nom de la règle
+        cpt = 0;
         token1 = strtok(line, " ");
         while (token1 != NULL) {
-        if (cpt == 0) {
-          // alors on définit le nom de la target
+          if (cpt == 0) {
+            // alors on définit le nom de la target
+            rule->target = token1;
+          } else {
 
-        }
-        else {
-
-        }
+            // la suite sont les dépendances
+            token2 = strtok(line + 1, " ");
+            while (token2 != NULL) {
+              // ajoute la dépendance à la règle
+              add_dependencie(rule, token2);
+              token2 = strtok(line, " ");
+            }
+          }
           token1 = strtok(NULL, " ");
         }
         // séparation par ' ' pour avoir les dépendances
