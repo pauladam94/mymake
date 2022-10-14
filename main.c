@@ -6,6 +6,7 @@
 #include "rule.h"
 
 dependencieGraph_t *create_graph() {
+  int cpt;
   char file_name[] = "Makefile";
   char *line;
   char *token1;
@@ -25,12 +26,12 @@ dependencieGraph_t *create_graph() {
     while (getline(&line, &len, makefile) != EOF) {
 
       if (line[0] == '\t') {
-        // '\t' alors traitement de la commande pour la règle en cours
+        // '\t' en début de ligne alors traitement de la commande pour la règle en cours
         char *command = malloc((strlen(line + 1) + 1) * sizeof(char));
         strcpy(command, line + 1);
         add_command(rule, command);
 
-      } else if (line[0] != '\n'){
+      } else if (line[0] != '\n') {
         // pas de '\t' en début de ligne
         // nouvelle règle
         rule = new_rule();
@@ -41,6 +42,13 @@ dependencieGraph_t *create_graph() {
         // séparation par ' : ' pour avoir le nom de la règle
         token1 = strtok(line, " ");
         while (token1 != NULL) {
+        if (cpt == 0) {
+          // alors on définit le nom de la target
+
+        }
+        else {
+
+        }
           token1 = strtok(NULL, " ");
         }
         // séparation par ' ' pour avoir les dépendances
