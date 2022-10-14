@@ -6,32 +6,6 @@
 #include "graph.h"
 #include "rule.h"
 
-dependencieGraph_t *create_graph(void);
-
-/*
-neighbours_checked : checks whether all neighbours have been checked thus the corresponding rule has already bean made
-  - returns EXIT_SUCCESS if all neighbours of node 'id' were checked
-  - EXIT_FAILURE otherwise
-*/
-int neighbours_checked(dependencieGraph_t *graph, char *checked, int id) {
-  for(int i = 0; i < graph->numberOfNeighbours[id]; i++) {
-    if(!checked[graph->neighbours[id][i]])
-      return EXIT_FAILURE;
-  }
-
-  return EXIT_SUCCESS;
-}
-
-/*
-make : makes a target depending on the parameter passed into target. If target is NULL it takes the first rule it encountered as the target to make
-  - returns EXIT_FAILURE if anything went wrong
-  - EXIT_SUCCESS otherwise, meaning the rule as been made and everything went fine
-*/
-int make(dependencieGraph_t *graph, char *target, char *checked) {
-  int id = 0;
-#include "graph.h"
-#include "rule.h"
-
 dependencieGraph_t *create_graph() {
   int cpt;
   char file_name[] = "Makefile";
@@ -96,13 +70,27 @@ dependencieGraph_t *create_graph() {
   return g;
 }
 
-// Pseudo Code Vérification de cycle naïve
 /*
-// renvoie false si le parcours à partir de init ne repasse pas par init
-let parcours_profondeur (init:sommet) : bool =
-  file vu =[s];
-  while (vu != 0){
+neighbours_checked : checks whether all neighbours have been checked thus the corresponding rule has already bean made
+  - returns EXIT_SUCCESS if all neighbours of node 'id' were checked
+  - EXIT_FAILURE otherwise
+*/
+int neighbours_checked(dependencieGraph_t *graph, char *checked, int id) {
+  for(int i = 0; i < graph->numberOfNeighbours[id]; i++) {
+    if(!checked[graph->neighbours[id][i]])
+      return EXIT_FAILURE;
   }
+
+  return EXIT_SUCCESS;
+}
+
+/*
+make : makes a target depending on the parameter passed into target. If target is NULL it takes the first rule it encountered as the target to make
+  - returns EXIT_FAILURE if anything went wrong
+  - EXIT_SUCCESS otherwise, meaning the rule as been made and everything went fine
+*/
+int make(dependencieGraph_t *graph, char *target, char *checked) {
+  int id = 0;
 
   if(target) {
     id = contains_rule(graph, target);
@@ -138,20 +126,6 @@ let parcours_profondeur (init:sommet) : bool =
   return EXIT_SUCCESS;
 }
 
-let verif_cycle (g : graph) : bool =
-  (g = (S,A))
-  bool TEST;
-  for s dans S
-    bool = bool && parcours_profondeur(s)
-  return bool
-
-graphe définit par liste d'adjacence
-parcours_profondeur est O(|S| + |A|)
-verif_cycle est en O(|S| . (|S| + |A|))
-il existe de meilleur solution mais ici les graphes ne seront jamais très
-grand de facon générale
-*/
-
 int main(int argc, char *argv[]) {
   dependencieGraph_t *graph = create_graph();
   compute_neighbours(graph);
@@ -178,5 +152,3 @@ int main(int argc, char *argv[]) {
 
   return EXIT_SUCCESS;
 }
-
-
