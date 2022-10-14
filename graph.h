@@ -22,6 +22,7 @@ typedef struct dependencieGraph_t {
 
 dependencieGraph_t *new_dependencie_graph(void);
 void delete_dependencie_graph(dependencieGraph_t *);
+int contains_rule(dependencieGraph_t *, char *);
 int compute_neighbours(dependencieGraph_t *);
 int add_node(dependencieGraph_t *, rule_t *);
 
