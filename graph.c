@@ -131,43 +131,45 @@ int add_node(dependencyGraph_t *graph, rule_t *rule) {
     return EXIT_SUCCESS;
 }
 
-void display_graph(dependencyGraph_t *graph) {
+void display_graph(dependencyGraph_t *graph, char option) {
     list_t *currentCommand;
     list_t *currentDependency;
 
     for(int i = 0; i < graph->numberOfNodes; i++) {
         printf("%s: ", graph->nodes[i]->target);
 
-        currentDependency = graph->nodes[i]->dependencies;
+        if(!option){
+            currentDependency = graph->nodes[i]->dependencies;
 
-        while(currentDependency) {
-            printf("%s ", currentDependency->content);
+            while(currentDependency) {
+                printf("%s ", currentDependency->content);
 
-            currentDependency = currentDependency->next;
+                currentDependency = currentDependency->next;
+            }
+
+            printf("\n");
+
+            currentCommand = graph->nodes[i]->commands;
+
+            while(currentCommand) {
+                printf("\t%s\n", currentCommand->content);
+
+                currentCommand = currentCommand->next;
+            }
+        } else {
+            for(int j = 0; j < graph->numberOfNeighbours[i]; j++) {
+                printf("%s ", graph->nodes[graph->neighbours[i][j]]->target);
+            }
+
+            printf("\n");
+
+            currentCommand = graph->nodes[i]->commands;
+
+            while(currentCommand) {
+                printf("\t%s\n", currentCommand->content);
+
+                currentCommand = currentCommand->next;
+            }
         }
-
-        printf("\n");
-
-        currentCommand = graph->nodes[i]->commands;
-
-        while(currentCommand) {
-            printf("\t%s\n", currentCommand->content);
-
-            currentCommand = currentCommand->next;
-        }
-
-        /*for(int j = 0; j < graph->numberOfNeighbours[i]; j++) {
-            printf("%s ", graph->nodes[graph->neighbours[i][j]]->target);
-        }
-
-        printf("\n");
-
-        currentCommand = graph->nodes[i]->commands;
-
-        while(currentCommand) {
-            printf("\t%s\n", currentCommand->content);
-
-            currentCommand = currentCommand->next;
-        }*/
     }
 }

@@ -50,9 +50,7 @@ dependencyGraph_t *create_graph() {
           return NULL;
         }
 
-        strcpy(command, line + i);
-
-        printf("\t'%s'\n", command);
+        strcpy(command, strtok(line + i, "\n"));
 
         add_command(rule, command);
 
@@ -87,8 +85,6 @@ dependencyGraph_t *create_graph() {
 
             strcpy(target, token);
             
-            printf("'%s': ", target);
-
             rule->target = target;
           } else {
             // set the dependencies
@@ -102,8 +98,6 @@ dependencyGraph_t *create_graph() {
 
             strcpy(dependency, token);
 
-            printf("'%s' ", dependency);
-
             add_dependency(rule, dependency);
           }
 
@@ -111,8 +105,6 @@ dependencyGraph_t *create_graph() {
 
           cpt++;
         }
-
-        printf("\n");
       }
     }
   }
@@ -147,57 +139,31 @@ char is_cyclic(dependencyGraph_t *graph, int id, char *checked, char *stack) {
 }
 
 /*
-neighbours_checked : checks whether all neighbours have been checked thus the corresponding rule has already bean made
-  - returns EXIT_SUCCESS if all neighbours of node 'id' were checked
-  - EXIT_FAILURE otherwise
-*/
-int neighbours_checked(dependencyGraph_t *graph, char *checked, int id) {
-  for(int i = 0; i < graph->numberOfNeighbours[id]; i++) {
-    if(!checked[graph->neighbours[id][i]])
-      return EXIT_FAILURE;
-  }
-
-  return EXIT_SUCCESS;
-}
-
-/*
 make : makes a target depending on the parameter passed into target. If target
 is NULL it takes the first rule it encountered as the target to make
   - returns EXIT_FAILURE if anything went wrong
   - EXIT_SUCCESS otherwise, meaning the rule has been made and everything went well
 */
-int make_naive(dependencyGraph_t *graph, char *target, char *checked) {
-  int id = 0;
+int make_naive(dependencyGraph_t *graph, int id, char *checked) {
+  for (int i = 0; i < graph->numberOfNeighbours[id]; i++) {
+    int currentNeighbour = graph->neighbours[id][i];
 
-  if (target) {
-    id = contains_rule(graph, target);
+    if(!checked[currentNeighbour]) {
+      if(make_naive(graph, currentNeighbour, checked)) {
+        debug_error("make_naive", "Something went wrong while making target '%s'\n", graph->nodes[currentNeighbour]->target);
 
-    if (id == -1) {
-      debug_error("make", "Couldn't find rule for target '%s'\n", target);
-
-      return EXIT_FAILURE;
-    }
-  }
-
-  if (neighbours_checked(graph, checked, id)) {
-    for (int i = 0; i < graph->numberOfNeighbours[id]; i++) {
-      int currentNeighbour = graph->neighbours[id][i];
-
-      if(!checked[currentNeighbour]) {
-        if(make_naive(graph, graph->nodes[currentNeighbour]->target, checked)) {
-          return EXIT_FAILURE;
-        }
-
-        checked[currentNeighbour] = 1;
+        return EXIT_FAILURE;
       }
+
+      checked[currentNeighbour] = 1;
     }
   }
 
   list_t *currentCommand = graph->nodes[id]->commands;
 
   while (currentCommand) {
-    // system(currentCommand->content);
-    printf(" - %s\n", currentCommand->content);
+    system(currentCommand->content);
+    printf("%s\n", currentCommand->content);
 
     currentCommand = currentCommand->next;
   }
@@ -214,8 +180,6 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  display_graph(graph);
-
   if(compute_neighbours(graph)) {
     debug_error("main", "compute_neighbours was aborted\n");
 
@@ -223,7 +187,7 @@ int main(int argc, char *argv[]) {
 
     return EXIT_FAILURE;
   }
-  /*
+  
   char *checked;
   char *stack;
 
@@ -245,16 +209,18 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
+  int id;
+
   // we're supposing there are no options to our mymake tool
   if(argc > 1) { // if one (or more) target(s) is(are) specified
     for(int i = 1; i < argc; i++) {
-      if(contains_rule(graph, argv[i]) == -1) {
+      if((id = contains_rule(graph, argv[i])) == -1) {
         debug_error("main", "Warning : the target '%s' doesn't exist\n", argv[i]);
       } else {
         memset(checked, 0, graph->numberOfNodes);
         memset(stack, 0, graph->numberOfNodes);
 
-        if(is_cyclic(graph, contains_rule(graph, argv[i]), checked, stack)) {
+        if(is_cyclic(graph, id, checked, stack)) {
           debug_error("main", "Couldn't make target '%s' as the corresponding dependency graph contains a cycle\n", argv[i]);
 
           delete_dependency_graph(graph);
@@ -267,7 +233,16 @@ int main(int argc, char *argv[]) {
 
         memset(checked, 0, graph->numberOfNodes);
 
-        make_naive(graph, argv[i], checked);
+        if(make_naive(graph, id, checked)) {
+          debug_error("main", "Something went wrong. Couldn't make target '%s'\n", argv[i]);
+
+          delete_dependency_graph(graph);
+
+          free(checked);
+          free(stack);
+
+          return EXIT_FAILURE;
+        }
       }
     }
   } else {
@@ -285,13 +260,24 @@ int main(int argc, char *argv[]) {
       return EXIT_FAILURE;
     }
 
-    make_naive(graph, NULL, checked);
-  }*/
+    memset(checked, 0, graph->numberOfNodes);
+
+    if(make_naive(graph, 0, checked)) {
+          debug_error("main", "Something went wrong. Couldn't make target '%s'\n", graph->nodes[0]->target);
+
+          delete_dependency_graph(graph);
+
+          free(checked);
+          free(stack);
+
+          return EXIT_FAILURE;
+    }
+  }
 
   delete_dependency_graph(graph);
-  /*
+  
   free(checked);
   free(stack);
-  */
+  
   return EXIT_SUCCESS;
 }

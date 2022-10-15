@@ -11,4 +11,4 @@ rule.o: rule.c rule.h debug.h
 	gcc -g -c rule.c
 
 clean:
-	rm -rf mymake *.o
+	rm -rf *.o
