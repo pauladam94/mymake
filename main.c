@@ -6,68 +6,144 @@
 #include "graph.h"
 #include "rule.h"
 
-dependencieGraph_t *create_graph() {
+dependencyGraph_t *create_graph() {
   int cpt;
   char file_name[] = "Makefile";
   char *line;
-  char *token1;
-  char *token2;
-  char *target;
+  size_t len = 0;
 
   rule_t *rule;
-  size_t len = 0;
-  dependencieGraph_t *g = new_dependencie_graph();
+  char *token, *target, *dependency, *command;
+  dependencyGraph_t *g = new_dependency_graph();
+
+  if(!g) {
+    debug_error("create_graph", "Couldn't create new graph\n");
+
+    return NULL;
+  }
 
   FILE *makefile = fopen(file_name, "r");
+
   if (makefile == NULL) {
-    printf("le fichier %s n'a pas pu s'ouvrir \n", file_name);
+    debug_error("create_graph", "Le fichier '%s' n'a pas pu s'ouvrir \n", file_name);
+
+    delete_dependency_graph(g);
+
+    return NULL;
   } else {
 
-    // parcours des lignes
+    // go through the lines of the Makefile
     while (getline(&line, &len, makefile) != EOF) {
 
       if (line[0] == '\t') {
-        // '\t' en début de ligne alors traitement de la commande pour la règle
-        // en cours
-        char *command = malloc((strlen(line + 1) + 1) * sizeof(char));
-        strcpy(command, line + 1);
+        // '\t' at the beginning of the line the we add a command to the current
+        // rule
+
+        int i = 0;
+        while(line[++i] == '\t'); // skips every tab
+
+        if(!(command = malloc((len - i) * sizeof(char)))) {
+          debug_error("create_graph", "Couldn't allocate memory for a new command\n(Command : %s)\n", line + i);
+
+          delete_dependency_graph(g);
+
+          return NULL;
+        }
+
+        strcpy(command, line + i);
+
+        printf("\t'%s'\n", command);
+
         add_command(rule, command);
 
       } else if (line[0] != '\n') {
-        // pas de '\t' en début de ligne
-        // nouvelle règle
+        // not '\t' at the beginning of the line the we add a new rule
         rule = new_rule();
 
-        // stocke dans le graphe la nouvelle règle
-        add_node(g, rule);
+        // store in the graph the new rule
+        if(add_node(g, rule) == -1) {
+          debug_error("create_graph", "Ambiguous rule for target '%s'. Rule already defined before in Makefile\n", rule->target);
 
-        // séparation par ' : ' pour avoir le nom de la règle
-        cpt = 0;
-        token1 = strtok(line, " ");
-        while (token1 != NULL) {
-          if (cpt == 0) {
-            // alors on définit le nom de la target
-            rule->target = token1;
-          } else {
+          delete_dependency_graph(g);
+          delete_rule(rule);
 
-            // la suite sont les dépendances
-            token2 = strtok(line + 1, " ");
-            while (token2 != NULL) {
-              // ajoute la dépendance à la règle
-              add_dependencie(rule, token2);
-              token2 = strtok(line, " ");
-            }
-          }
-          token1 = strtok(NULL, " ");
+          return NULL;
         }
-        // séparation par ' ' pour avoir les dépendances
-      }
 
-      // stocke rule
+        // split the line to access the target and the dependancies
+        cpt = 0;
+        token = strtok(line, " :\t\n");
+
+        while (token != NULL) {
+          if (cpt == 0) {
+            // set the target
+            if(!(target = malloc((strlen(token) + 1) * sizeof(char)))) {
+              debug_error("create_graph", "Couldn't allocate memory for a new target\n");
+
+              delete_dependency_graph(g);
+
+              return NULL;
+            }
+
+            strcpy(target, token);
+            
+            printf("'%s': ", target);
+
+            rule->target = target;
+          } else {
+            // set the dependencies
+            if(!(dependency = malloc((strlen(token) + 1) * sizeof(char)))) {
+              debug_error("create_graph", "Couldn't allocate memory for a new dependecy");
+
+              delete_dependency_graph(g);
+
+              return NULL;
+            }
+
+            strcpy(dependency, token);
+
+            printf("'%s' ", dependency);
+
+            add_dependency(rule, dependency);
+          }
+
+          token = strtok(NULL, " :\t\n");
+
+          cpt++;
+        }
+
+        printf("\n");
+      }
     }
-    printf("\n");
   }
+
   return g;
+}
+
+/*
+is_cyclic : checks wheter the sub-graph accessible from node with id 'id' contains a cycle
+  - returns 1 if it does
+  - 0 otherwise
+*/
+char is_cyclic(dependencyGraph_t *graph, int id, char *checked, char *stack) {
+  if(!checked[id]) {
+    checked[id] = 1;
+    stack[id] = 1;
+
+    for(int i = 0; i < graph->numberOfNeighbours[id]; i++) {
+      int currentId = graph->neighbours[id][i];
+
+      if(!checked[currentId] && is_cyclic(graph, currentId, checked, stack)) {
+        return 1;
+      } else if(stack[currentId]) {
+        return 1;
+      }
+    }
+  }
+
+  stack[id] = 0;
+
+  return 0;
 }
 
 /*
@@ -75,7 +151,7 @@ neighbours_checked : checks whether all neighbours have been checked thus the co
   - returns EXIT_SUCCESS if all neighbours of node 'id' were checked
   - EXIT_FAILURE otherwise
 */
-int neighbours_checked(dependencieGraph_t *graph, char *checked, int id) {
+int neighbours_checked(dependencyGraph_t *graph, char *checked, int id) {
   for(int i = 0; i < graph->numberOfNeighbours[id]; i++) {
     if(!checked[graph->neighbours[id][i]])
       return EXIT_FAILURE;
@@ -87,9 +163,9 @@ int neighbours_checked(dependencieGraph_t *graph, char *checked, int id) {
 /*
 make : makes a target depending on the parameter passed into target. If target is NULL it takes the first rule it encountered as the target to make
   - returns EXIT_FAILURE if anything went wrong
-  - EXIT_SUCCESS otherwise, meaning the rule as been made and everything went fine
+  - EXIT_SUCCESS otherwise, meaning the rule has been made and everything went well
 */
-int make(dependencieGraph_t *graph, char *target, char *checked) {
+int make_naive(dependencyGraph_t *graph, char *target, char *checked) {
   int id = 0;
 
   if(target) {
@@ -107,7 +183,9 @@ int make(dependencieGraph_t *graph, char *target, char *checked) {
       int currentNeighbour = graph->neighbours[id][i];
 
       if(!checked[currentNeighbour]) {
-        make(graph, graph->nodes[currentNeighbour]->target, checked);
+        if(make_naive(graph, graph->nodes[currentNeighbour]->target, checked)) {
+          return EXIT_FAILURE;
+        }
 
         checked[currentNeighbour] = 1;
       }
@@ -127,15 +205,41 @@ int make(dependencieGraph_t *graph, char *target, char *checked) {
 }
 
 int main(int argc, char *argv[]) {
-  dependencieGraph_t *graph = create_graph();
-  compute_neighbours(graph);
+  dependencyGraph_t *graph = create_graph();
+  
+  if(!graph) {
+    debug_error("main", "create_graph returned with error(s)\n");
 
+    return EXIT_FAILURE;
+  }
+
+  display_graph(graph);
+
+  if(compute_neighbours(graph)) {
+    debug_error("main", "compute_neighbours was aborted\n");
+
+    delete_dependency_graph(graph);
+
+    return EXIT_FAILURE;
+  }
+  /*
   char *checked;
+  char *stack;
 
   if(!(checked = malloc(graph->numberOfNodes * sizeof(char)))) {
-    debug_error("main", "Couldn't allocate memory for checked\n");
+    debug_error("main", "Couldn't allocate memory for 'checked'\n");
 
-    delete_dependencie_graph(graph);
+    delete_dependency_graph(graph);
+
+    return EXIT_FAILURE;
+  }
+
+  if(!(stack = malloc(graph->numberOfNodes * sizeof(char)))) {
+    debug_error("main", "Couldn't allocate memory for 'stack'\n");
+
+    delete_dependency_graph(graph);
+
+    free(checked);
 
     return EXIT_FAILURE;
   }
@@ -143,12 +247,50 @@ int main(int argc, char *argv[]) {
   // we're supposing there are no options to our mymake tool
   if(argc > 1) { // if one (or more) target(s) is(are) specified
     for(int i = 1; i < argc; i++) {
-      memset(checked, 0, graph->numberOfNodes);
-      make(graph, argv[i], checked);
+      if(contains_rule(graph, argv[i]) == -1) {
+        debug_error("main", "Warning : the target '%s' doesn't exist\n", argv[i]);
+      } else {
+        memset(checked, 0, graph->numberOfNodes);
+        memset(stack, 0, graph->numberOfNodes);
+
+        if(is_cyclic(graph, contains_rule(graph, argv[i]), checked, stack)) {
+          debug_error("main", "Couldn't make target '%s' as the corresponding dependency graph contains a cycle\n", argv[i]);
+
+          delete_dependency_graph(graph);
+
+          free(checked);
+          free(stack);
+
+          return EXIT_FAILURE;
+        }
+
+        memset(checked, 0, graph->numberOfNodes);
+
+        make_naive(graph, argv[i], checked);
+      }
     }
   } else {
-    make(graph, NULL, checked);
-  }
+    memset(checked, 0, graph->numberOfNodes);
+    memset(stack, 0, graph->numberOfNodes);
 
+    if(is_cyclic(graph, 0, checked, stack)) {
+      debug_error("main", "Couldn't make target '%s' as the corresponding dependency graph contains a cycle\n", graph->nodes[0]->target);
+
+      delete_dependency_graph(graph);
+
+      free(checked);
+      free(stack);
+
+      return EXIT_FAILURE;
+    }
+
+    make_naive(graph, NULL, checked);
+  }*/
+
+  delete_dependency_graph(graph);
+  /*
+  free(checked);
+  free(stack);
+  */
   return EXIT_SUCCESS;
 }

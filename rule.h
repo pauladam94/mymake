@@ -16,7 +16,7 @@ typedef struct list_t {
 rule_t :
     - id : self explanatory
     - target : self explanatory
-    - dependencies : a linked list of all the dependencies required to make target
+    - dependencys : a linked list of all the dependencys required to make target
     - commands : a linked list of all the commands to execute to make target
 */
 typedef struct {
@@ -32,7 +32,7 @@ void delete_list(list_t *);
 int add_element_in_list(list_t *, char *);
 rule_t *new_rule(void);
 void delete_rule(rule_t *);
-void add_dependencie(rule_t *, char *);
+void add_dependency(rule_t *, char *);
 void add_command(rule_t *, char *);
 
 #endif

@@ -12,7 +12,8 @@ list_t *new_list(void) {
     list_t *list = malloc(sizeof(list_t));
 
     if(!list) {
-        debug_error("new_list", "Couldn't allocate memory for 'list'\n");
+        debug_error("new_list", "Couldn't allocate memory for a new list\n");
+
         return NULL;
     }
 
@@ -26,13 +27,16 @@ list_t *new_list(void) {
 delete_list : frees every element of the list and then frees the list
 */
 void delete_list(list_t *list) {
-    while(list->next) {
-        delete_list(list->next);
+    if(list) {
+        list_t *current = list->next;
+        
+        if(current) {
+            delete_list(current);
+        }
 
-        free(list->next);
+        free(list->content);
+        free(list);
     }
-
-    free(list);
 }
 
 /*
@@ -41,21 +45,21 @@ add_element_in_list : adds a new element at the end of a linked list
     - EXIT_SUCCESS otherwise
 */
 int add_element_in_list(list_t *list, char *content) {
-    list_t *elem = new_list();
+    if(list->next) { // if not the last element
+        return add_element_in_list(list->next, content);
+    } else {
+        list_t *newElement = list;
 
-    if(!elem) {
-        return EXIT_FAILURE;
+        if(list->content) { // if the first element is not the last one
+            if(!(newElement = new_list())) {
+                return EXIT_FAILURE;
+            }
+
+            list->next = newElement;
+        }
+
+        newElement->content = content;
     }
-
-    list_t *current = list;
-
-    elem->content = content;
-
-    while(current->next) {
-        current = current->next;
-    }
-
-    current->next = elem;
 
     return EXIT_SUCCESS;
 }
@@ -70,6 +74,7 @@ rule_t *new_rule(void) {
 
     if(!rule) {
         debug_error("new_rule", "Couldn't allocate memory for 'rule'\n");
+
         return NULL;
     }
 
@@ -78,6 +83,7 @@ rule_t *new_rule(void) {
 
     if(!rule->dependencies) {
         delete_rule(rule);
+
         return NULL;
     }
 
@@ -85,6 +91,7 @@ rule_t *new_rule(void) {
 
     if(!rule->commands) {
         delete_rule(rule);
+
         return NULL;
     }
 
@@ -97,20 +104,20 @@ rule_t *new_rule(void) {
 delete_rule : deallocate memory for a given rule
 */
 void delete_rule(rule_t *rule) {
-    free(rule->target);
     delete_list(rule->dependencies);
     delete_list(rule->commands);
 
+    free(rule->target);
     free(rule);
 
     ruleNumber--;
 }
 
 /*
-add_dependencie : abstraction of adding a dependencie in the linked list of dependencies in a rule
+add_dependency : abstraction of adding a dependency in the linked list of dependencies in a rule
 */
-void add_dependencie(rule_t *rule, char *dependencie) {
-    add_element_in_list(rule->dependencies, dependencie);
+void add_dependency(rule_t *rule, char *dependency) {
+    add_element_in_list(rule->dependencies, dependency);
 }
 
 /*
