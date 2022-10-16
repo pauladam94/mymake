@@ -1,15 +1,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "debug.h"
 #include "graph.h"
 #include "rule.h"
 
+/*
+create_graph : create the rules structure based on Makefile, and put it all together in a graph
+  - returns the graph if everything went well
+  - NULL otherwise
+*/
 dependencyGraph_t *create_graph() {
   int cpt;
   char file_name[] = "Makefile";
-  char *line;
+  char *line = NULL;
   size_t len = 0;
 
   rule_t *rule;
@@ -113,34 +119,7 @@ dependencyGraph_t *create_graph() {
 }
 
 /*
-is_cyclic : checks wheter the sub-graph accessible from node with id 'id' contains a cycle
-  - returns 1 if it does
-  - 0 otherwise
-*/
-char is_cyclic(dependencyGraph_t *graph, int id, char *checked, char *stack) {
-  if(!checked[id]) {
-    checked[id] = 1;
-    stack[id] = 1;
-
-    for(int i = 0; i < graph->numberOfNeighbours[id]; i++) {
-      int currentId = graph->neighbours[id][i];
-
-      if(!checked[currentId] && is_cyclic(graph, currentId, checked, stack)) {
-        return 1;
-      } else if(stack[currentId]) {
-        return 1;
-      }
-    }
-  }
-
-  stack[id] = 0;
-
-  return 0;
-}
-
-/*
-make : makes a target depending on the parameter passed into target. If target
-is NULL it takes the first rule it encountered as the target to make
+make_naive : makes a target depending on the parameter passed into target. If target is NULL it takes the first rule 'create_graph' encountered as the target to make
   - returns EXIT_FAILURE if anything went wrong
   - EXIT_SUCCESS otherwise, meaning the rule has been made and everything went well
 */
@@ -171,6 +150,140 @@ int make_naive(dependencyGraph_t *graph, int id, char *checked) {
   return EXIT_SUCCESS;
 }
 
+/*
+make : makes a target depending on the parameter passed into target, but this time it takes the modification time into account. If target is NULL it takes the first rule 'create_graph' encountered as the target to make
+  - returns EXIT_FAILURE if anything went wrong
+  - EXIT_SUCCESS otherwise, meaning the rule has been made and everything went well
+*/
+int make(dependencyGraph_t *graph, int id, char *checked) {
+  struct stat *fileInfos;
+
+  if(!(fileInfos = malloc(sizeof(struct stat)))) {
+    debug_error("make", "Couldn't allocate memory for 'struct stat' containing file informations for rule with target '%s'\n", graph->nodes[id]->target);
+
+    return EXIT_FAILURE;
+  }
+
+  FILE *f = fopen(graph->nodes[id]->target, "r");
+
+  if(f) {
+    fclose(f);
+
+    if(stat(graph->nodes[id]->target, fileInfos)) {
+      debug_error("make", "Couldn't get informations on file '%s'\n", graph->nodes[id]->target);
+
+      free(fileInfos);
+
+      return EXIT_FAILURE;
+    }
+
+    time_t modificationTime = fileInfos->st_mtime;
+    char hasModifications = 0;
+
+    if(!graph->numberOfNeighbours[id]) { // if no dependency then it has to be done once again
+      list_t *currentDependency = graph->nodes[id]->dependencies;
+
+      while(currentDependency) {
+        char *content = currentDependency->content;
+
+        FILE *f = fopen(content, "r");
+
+        if(!f) {
+          hasModifications = 1;
+
+          break;
+        }
+
+        fclose(f);
+
+        if(stat(content, fileInfos)) {
+          debug_error("make", "Couldn't get informations on file '%s'\n", content);
+
+          free(fileInfos);
+
+          return EXIT_FAILURE;
+        }
+
+        if(fileInfos->st_mtime > modificationTime) {
+          hasModifications = 1;
+
+          break;
+        }
+
+        currentDependency = currentDependency->next;
+      }
+    } else {
+      for(int i = 0; i < graph->numberOfNeighbours[id]; i++) {
+        char *currentDependency = graph->nodes[graph->neighbours[id][i]]->target;
+
+        FILE *f = fopen(currentDependency, "r");
+
+        if(!f) {
+          hasModifications = 1;
+
+          break;
+        }
+
+        fclose(f);
+
+        if(stat(currentDependency, fileInfos)) {
+          debug_error("make", "Couldn't get informations on file '%s'\n", currentDependency);
+
+          free(fileInfos);
+
+          return EXIT_FAILURE;
+        }
+
+        if(fileInfos->st_mtime > modificationTime) { // check wether the dependency has been modified after the current target
+          hasModifications = 1;
+
+          break;
+        }
+      }
+    }
+
+    if(!hasModifications) {
+      fprintf(stdout, "make: '%s' is up to date.\n", graph->nodes[id]->target);
+
+      free(fileInfos);
+
+      return EXIT_SUCCESS;
+    }
+  }
+
+  for (int i = 0; i < graph->numberOfNeighbours[id]; i++) {
+    int currentNeighbour = graph->neighbours[id][i];
+
+    if(!checked[currentNeighbour]) {
+      if(make(graph, currentNeighbour, checked)) {
+        debug_error("make", "Something went wrong while making target '%s'\n", graph->nodes[currentNeighbour]->target);
+
+        free(fileInfos);
+
+        return EXIT_FAILURE;
+      }
+
+      checked[currentNeighbour] = 1;
+    }
+  }
+
+  list_t *currentCommand = graph->nodes[id]->commands;
+
+  while (currentCommand) {
+    system(currentCommand->content);
+    fprintf(stdout, "%s\n", currentCommand->content);
+
+    currentCommand = currentCommand->next;
+  }
+
+  free(fileInfos);
+
+  return EXIT_SUCCESS;
+}
+
+/*
+main : the executable can take several targets for arguments, and will make them from the leftmost to the rightmost one
+*/
 int main(int argc, char *argv[]) {
   dependencyGraph_t *graph = create_graph();
   
@@ -215,7 +328,7 @@ int main(int argc, char *argv[]) {
   if(argc > 1) { // if one (or more) target(s) is(are) specified
     for(int i = 1; i < argc; i++) {
       if((id = contains_rule(graph, argv[i])) == -1) {
-        debug_error("main", "Warning : the target '%s' doesn't exist\n", argv[i]);
+         fprintf(stdout, "make: *** No rule to make target '%s'.  Stop.\n", argv[i]);
       } else {
         memset(checked, 0, graph->numberOfNodes);
         memset(stack, 0, graph->numberOfNodes);
@@ -233,7 +346,7 @@ int main(int argc, char *argv[]) {
 
         memset(checked, 0, graph->numberOfNodes);
 
-        if(make_naive(graph, id, checked)) {
+        if(make(graph, id, checked)) {
           debug_error("main", "Something went wrong. Couldn't make target '%s'\n", argv[i]);
 
           delete_dependency_graph(graph);
@@ -262,7 +375,7 @@ int main(int argc, char *argv[]) {
 
     memset(checked, 0, graph->numberOfNodes);
 
-    if(make_naive(graph, 0, checked)) {
+    if(make(graph, 0, checked)) {
           debug_error("main", "Something went wrong. Couldn't make target '%s'\n", graph->nodes[0]->target);
 
           delete_dependency_graph(graph);

@@ -16,7 +16,7 @@ typedef struct list_t {
 rule_t :
     - id : self explanatory
     - target : self explanatory
-    - dependencys : a linked list of all the dependencys required to make target
+    - dependencies : a linked list of all the dependencies required to make target
     - commands : a linked list of all the commands to execute to make target
 */
 typedef struct {

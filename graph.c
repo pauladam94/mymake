@@ -80,6 +80,8 @@ int compute_neighbours(dependencyGraph_t *graph) {
     }
 
     for(int i = 0; i < graph->numberOfNodes; i++) {
+        graph->neighbours[i] = NULL;
+
         list_t *currentDependency = graph->nodes[i]->dependencies;
 
         while(currentDependency && currentDependency->content) {
@@ -131,6 +133,35 @@ int add_node(dependencyGraph_t *graph, rule_t *rule) {
     return EXIT_SUCCESS;
 }
 
+/*
+is_cyclic : checks wheter the sub-graph accessible from node with id 'id' contains a cycle
+  - returns 1 if it does
+  - 0 otherwise
+*/
+char is_cyclic(dependencyGraph_t *graph, int id, char *checked, char *stack) {
+  if(!checked[id]) {
+    checked[id] = 1;
+    stack[id] = 1;
+
+    for(int i = 0; i < graph->numberOfNeighbours[id]; i++) {
+      int currentId = graph->neighbours[id][i];
+
+      if(!checked[currentId] && is_cyclic(graph, currentId, checked, stack)) {
+        return 1;
+      } else if(stack[currentId]) {
+        return 1;
+      }
+    }
+  }
+
+  stack[id] = 0;
+
+  return 0;
+}
+
+/*
+display_graph : display the dependency graph according to the rule described by option. 0 for the rule-based display, and 1 for the dependency-graph-based display
+*/
 void display_graph(dependencyGraph_t *graph, char option) {
     list_t *currentCommand;
     list_t *currentDependency;

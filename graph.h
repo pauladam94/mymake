@@ -25,6 +25,7 @@ void delete_dependency_graph(dependencyGraph_t *);
 int contains_rule(dependencyGraph_t *, char *);
 int compute_neighbours(dependencyGraph_t *);
 int add_node(dependencyGraph_t *, rule_t *);
+char is_cyclic(dependencyGraph_t *, int, char *, char *);
 void display_graph(dependencyGraph_t *, char);
 
 #endif
